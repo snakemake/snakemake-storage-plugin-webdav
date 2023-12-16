@@ -174,7 +174,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
         self.parsed = urlparse(self.query)
-        self.path = f"{self.netloc}/self.parsed.path"
+        self.path = f"{self.parsed.netloc}/{self.parsed.path}"
 
     async def inventory(self, cache: IOCacheStorageInterface):
         """From this file, try to find as much existence and modification date
