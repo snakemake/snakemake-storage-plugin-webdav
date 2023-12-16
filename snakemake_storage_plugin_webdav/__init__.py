@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Iterable, Optional, List
 from urllib.parse import urlparse
+from pathlib import PosixPath
 
 from webdav3.client import Client
 
@@ -245,6 +246,9 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     def store_object(self):
         # Ensure that the object is stored at the location specified by
         # self.local_path().
+        parent = str(PosixPath(self.path).parent)
+        if parent != ".":
+            self.provider.client.mkdir(parent, recursive=True)
         self.provider.client.upload_sync(
             remote_path=self.path, local_path=self.local_path()
         )
