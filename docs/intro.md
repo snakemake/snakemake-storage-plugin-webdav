@@ -1,0 +1,1 @@
+A Snakemake storage plugin for webdav.
