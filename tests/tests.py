@@ -29,6 +29,6 @@ class TestStorage(TestStorageBase):
         return StorageProviderSettings(
             host="www.dlp-test.com/webdav",
             protocol="http",
-            username="www.dlp-test.com\WebDAV",
+            username=r"www.dlp-test.com\WebDAV",
             password="WebDAV",
         )

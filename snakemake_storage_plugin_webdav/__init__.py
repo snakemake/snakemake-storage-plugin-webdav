@@ -19,7 +19,10 @@ from snakemake_interface_storage_plugins.storage_object import (
     StorageObjectGlob,
     retry_decorator,
 )
-from snakemake_interface_storage_plugins.io import IOCacheStorageInterface, get_constant_prefix
+from snakemake_interface_storage_plugins.io import (
+    IOCacheStorageInterface,
+    get_constant_prefix,
+)
 
 
 # Optional:
@@ -106,9 +109,10 @@ class StorageProvider(StorageProviderBase):
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
         port = f":{self.settings.port}" if self.settings.port != 443 else ""
+        host = f"{self.settings.protocol}://{self.settings.host}{port}"
         self.client = Client(
             {
-                "webdav_hostname": f"{self.settings.protocol}://{self.settings.host}{port}",
+                "webdav_hostname": host,
                 "webdav_login": self.settings.username,
                 "webdav_password": self.settings.password,
                 "webdav_timeout": self.settings.timeout,
@@ -153,10 +157,13 @@ class StorageProvider(StorageProviderBase):
         # object is actually used.
         if query.startswith("dav://"):
             return StorageQueryValidationResult(
-                is_valid=True, query=query,
+                is_valid=True,
+                query=query,
             )
         else:
-            return StorageQueryValidationResult(is_valid=False, query=query, reason="Query has to start with dav://")
+            return StorageQueryValidationResult(
+                is_valid=False, query=query, reason="Query has to start with dav://"
+            )
 
 
 # Required:
@@ -227,7 +234,9 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     @retry_decorator
     def retrieve_object(self):
         # Ensure that the object is accessible locally under self.local_path()
-        self.provider.client.download_sync(remote_path=self.path, local_path=self.local_path())
+        self.provider.client.download_sync(
+            remote_path=self.path, local_path=self.local_path()
+        )
 
     # The following to methods are only required if the class inherits from
     # StorageObjectReadWrite.
@@ -236,7 +245,9 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     def store_object(self):
         # Ensure that the object is stored at the location specified by
         # self.local_path().
-        self.provider.client.upload_sync(remote_path=self.path, local_path=self.local_path())
+        self.provider.client.upload_sync(
+            remote_path=self.path, local_path=self.local_path()
+        )
 
     @retry_decorator
     def remove(self):
@@ -255,4 +266,9 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # prefix of the query before the first wildcard.
         prefix = get_constant_prefix(self.path, strip_incomplete_parts=True)
         if prefix:
-            return [item.path for item in self.provider.client.list(prefix, recursive=True, get_info=True)]
+            return [
+                item.path
+                for item in self.provider.client.list(
+                    prefix, recursive=True, get_info=True
+                )
+            ]
