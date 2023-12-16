@@ -246,9 +246,10 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     def store_object(self):
         # Ensure that the object is stored at the location specified by
         # self.local_path().
-        parent = str(PosixPath(self.path).parent)
-        if parent != ".":
-            self.provider.client.mkdir(parent, recursive=True)
+        parents = PosixPath(self.path).parent.parents[:-1][::-1]
+        for ancestor in parents:
+            if not self.provider.client.check(ancestor):
+                self.provider.client.mkdir(ancestor)
         self.provider.client.upload_sync(
             remote_path=self.path, local_path=self.local_path()
         )
