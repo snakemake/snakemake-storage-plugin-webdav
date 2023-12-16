@@ -157,12 +157,12 @@ class StorageProvider(StorageProviderBase):
         # object is actually used.
         if query.startswith("dav://"):
             return StorageQueryValidationResult(
-                is_valid=True,
+                valid=True,
                 query=query,
             )
         else:
             return StorageQueryValidationResult(
-                is_valid=False, query=query, reason="Query has to start with dav://"
+                valid=False, query=query, reason="Query has to start with dav://"
             )
 
 
