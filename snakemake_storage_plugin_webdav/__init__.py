@@ -19,7 +19,7 @@ from snakemake_interface_storage_plugins.storage_object import (
     StorageObjectGlob,
     retry_decorator,
 )
-from snakemake_interface_storage_plugins.io import IOCacheStorageInterface
+from snakemake_interface_storage_plugins.io import IOCacheStorageInterface, get_constant_prefix
 
 
 # Optional:
@@ -187,6 +187,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # the given IOCache object, using self.cache_key() as key.
         # Optionally, this can take a custom local suffix, needed e.g. when you want
         # to cache more items than the current query: self.cache_key(local_suffix=...)
+        # TODO implement
         pass
 
     def get_inventory_parent(self) -> Optional[str]:
@@ -252,4 +253,6 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # The method has to return concretized queries without any remaining wildcards.
         # Use snakemake_executor_plugins.io.get_constant_prefix(self.query) to get the
         # prefix of the query before the first wildcard.
-        ...
+        prefix = get_constant_prefix(self.path, strip_incomplete_parts=True)
+        if prefix:
+            return [item.path for item in self.provider.client.list(prefix, recursive=True, get_info=True)]
