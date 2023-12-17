@@ -27,8 +27,8 @@ class TestStorage(TestStorageBase):
     def get_storage_provider_settings(self) -> Optional[StorageProviderSettingsBase]:
         # instantiate StorageProviderSettings of this plugin as appropriate
         return StorageProviderSettings(
-            host="www.dlp-test.com/webdav",
+            host="localhost/webdav",
             protocol="http",
-            username=r"www.dlp-test.com\WebDAV",
-            password="WebDAV",
+            username="alice",
+            password="secret1234",
         )

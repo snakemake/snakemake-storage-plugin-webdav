@@ -182,7 +182,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
         self.parsed = urlparse(self.query)
-        self.path = f"{self.parsed.netloc}/{self.parsed.path}"
+        self.path = f"{self.parsed.netloc}{self.parsed.path}"
 
     async def inventory(self, cache: IOCacheStorageInterface):
         """From this file, try to find as much existence and modification date
@@ -236,7 +236,7 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     def retrieve_object(self):
         # Ensure that the object is accessible locally under self.local_path()
         self.provider.client.download_sync(
-            remote_path=self.path, local_path=self.local_path()
+            remote_path=self.path, local_path=str(self.local_path())
         )
 
     # The following to methods are only required if the class inherits from
@@ -246,12 +246,12 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     def store_object(self):
         # Ensure that the object is stored at the location specified by
         # self.local_path().
-        parents = PosixPath(self.path).parent.parents[:-1][::-1]
+        parents = PosixPath(self.path).parents[::-1][1:]
         for ancestor in parents:
-            if not self.provider.client.check(ancestor):
-                self.provider.client.mkdir(ancestor)
+            if not self.provider.client.check(str(ancestor)):
+                self.provider.client.mkdir(str(ancestor))
         self.provider.client.upload_sync(
-            remote_path=self.path, local_path=self.local_path()
+            remote_path=self.path, local_path=str(self.local_path())
         )
 
     @retry_decorator
