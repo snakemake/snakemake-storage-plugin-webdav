@@ -87,7 +87,7 @@ jobs:
       - name: Setup webdav
         run: |
           docker run \
-            -e AUTH_TYPE=Digest -e USERNAME=alice -e PASSWORD=secret1234 \
+            -e AUTH_TYPE=Basic -e USERNAME=alice -e PASSWORD=secret1234 \
             --publish 80:80 --name webdav \
             -e LOCATION=/webdav -d bytemark/webdav
 
