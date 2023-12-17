@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
+from pathlib import PosixPath
 from typing import Any, Iterable, Optional, List
 from urllib.parse import urlparse
 
 from webdav4.fsspec import WebdavFileSystem
+from webdav4.client import ResourceNotFound
 
 from snakemake_interface_storage_plugins.settings import StorageProviderSettingsBase
 from snakemake_interface_storage_plugins.storage_provider import (  # noqa: F401
@@ -21,6 +23,7 @@ from snakemake_interface_storage_plugins.storage_object import (
 from snakemake_interface_storage_plugins.io import (
     IOCacheStorageInterface,
     get_constant_prefix,
+    Mtime,
 )
 
 
@@ -57,26 +60,7 @@ class StorageProviderSettings(StorageProviderSettingsBase):
     host: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Webdav hostname",
-            "env_var": False,
-            # Optionally specify that setting is required when the executor is in use.
-            "required": True,
-        },
-    )
-    port: int = field(
-        default=443,
-        metadata={
-            "help": "Webdav port",
-            "env_var": False,
-            # Optionally specify that setting is required when the executor is in use.
-            "required": True,
-        },
-    )
-    protocol: str = field(
-        default="https",
-        metadata={
-            "help": "Webdav protocol",
-            "choices": ["http", "https"],
+            "help": "Webdav hostname (e.g. http://someserver:80/webdav))",
             "env_var": False,
             # Optionally specify that setting is required when the executor is in use.
             "required": True,
@@ -107,10 +91,8 @@ class StorageProvider(StorageProviderBase):
         # This is optional and can be removed if not needed.
         # Alternatively, you can e.g. prepare a connection to your storage backend here.
         # and set additional attributes.
-        port = f":{self.settings.port}" if self.settings.port != 443 else ""
-        host = f"{self.settings.protocol}://{self.settings.host}{port}"
         self.client = WebdavFileSystem(
-            host, auth=(self.settings.username, self.settings.password)
+            self.settings.host, auth=(self.settings.username, self.settings.password)
         )
 
     @classmethod
@@ -188,12 +170,23 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
         # the given IOCache object, using self.cache_key() as key.
         # Optionally, this can take a custom local suffix, needed e.g. when you want
         # to cache more items than the current query: self.cache_key(local_suffix=...)
-        # TODO implement
-        pass
+        key = self.cache_key()
+        if key in cache.exists_in_storage:
+            return
+
+        try:
+            props = self.provider.client.client.get_props(self.path)
+        except ResourceNotFound:
+            cache.exists_in_storage[key] = False
+            return
+        cache.mtime[key] = Mtime(storage=props.modified.timestamp())
+        cache.size[key] = props.content_length
+        cache.exists_in_storage[key] = True
 
     def get_inventory_parent(self) -> Optional[str]:
         """Return the parent directory of this object."""
-        # this is optional and can be left as is
+        # For webdav, there is no cheap way to get existence and other information
+        # from the parent, hence do not implement this.
         return None
 
     def local_suffix(self) -> str:
@@ -212,28 +205,40 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     @retry_decorator
     def exists(self) -> bool:
         # return True if the object exists
-        self.provider.client.exists(self.path)
+        exists = self.provider.client.client.exists(self.path)
+        if exists:
+            return True
+        else:
+            # could be directory, exists only works for files
+            try:
+                self.provider.client.client.ls(self.path)
+                return True
+            except (ResourceNotFound, FileNotFoundError):
+                return False
 
     @retry_decorator
     def mtime(self) -> float:
         # return the modification time
-        modified = self.provider.client.modified(self.path)
+        modified = self.provider.client.client.modified(self.path)
         return modified.timestamp()
 
     @retry_decorator
     def size(self) -> int:
         # return the size in bytes
-        return self.provider.client.size(self.path)
+        return self.provider.client.client.content_length(self.path)
 
     @retry_decorator
     def retrieve_object(self):
         # Ensure that the object is accessible locally under self.local_path()
+        # TODO isdir seems to return error 301 for some servers. Fix webdav4!
         if self.provider.client.isdir(self.path):
-            lpath = f"{self.local_path()}/"
             self.local_path().mkdir(parents=True, exist_ok=True)
+            for item in self.provider.client.walk(self.path, detail=False):
+                lpath = self.local_path() / PosixPath(item).relative_to(self.path)
+                self.provider.client.client.download_file(str(item), str(lpath))
         else:
             lpath = str(self.local_path())
-        self.provider.client.get(self.path, lpath, recursive=True)
+            self.provider.client.client.download_file(self.path, lpath)
 
     # The following to methods are only required if the class inherits from
     # StorageObjectReadWrite.
@@ -242,11 +247,16 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     def store_object(self):
         # Ensure that the object is stored at the location specified by
         # self.local_path().
-        if self.local_path().is_dir():
-            rpath = f"{self.path.rstrip('/')}/"
-        else:
-            rpath = self.path.rstrip("/")
-        self.provider.client.put(str(self.local_path()), rpath, recursive=True)
+        def upload(lpath):
+            rpath = PosixPath(self.path) / lpath.relative_to(self.local_path())
+            if lpath.is_dir():
+                self.client.client.mkdir(str(rpath))
+                for sub in lpath.listdir():
+                    upload(sub)
+            else:
+                self.provider.client.client.upload_file(str(lpath), str(rpath))
+
+        upload(self.local_path())
 
     @retry_decorator
     def remove(self):
