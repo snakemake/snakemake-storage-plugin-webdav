@@ -15,7 +15,7 @@ class TestStorage(TestStorageBase):
     def get_query(self, tmp_path) -> str:
         # Return a query. If retrieve_only is True, this should be a query that
         # is present in the storage, as it will not be created.
-        return "dav://test.md"
+        return "dav://foo/bar/test.md"
 
     def get_query_not_existing(self, tmp_path) -> str:
         return f"dav://{uuid.uuid4().hex}"

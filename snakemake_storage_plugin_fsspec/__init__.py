@@ -4,7 +4,7 @@ from typing import Any, Iterable, Optional, List
 from urllib.parse import urlparse
 
 from webdav4.fsspec import WebdavFileSystem
-from webdav4.client import ResourceNotFound
+from webdav4.client import ResourceNotFound, ResourceAlreadyExists
 
 from snakemake_interface_storage_plugins.settings import StorageProviderSettingsBase
 from snakemake_interface_storage_plugins.storage_provider import (  # noqa: F401
@@ -254,6 +254,13 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
                 for sub in lpath.listdir():
                     upload(sub)
             else:
+                parents = rpath.parents[:-1][::-1]
+                if parents:
+                    for parent in parents:
+                        try:
+                            self.provider.client.client.mkdir(str(parent))
+                        except ResourceAlreadyExists:
+                            pass
                 self.provider.client.client.upload_file(str(lpath), str(rpath))
 
         upload(self.local_path())
