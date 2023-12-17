@@ -1,8 +1,6 @@
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any, Iterable, Optional, List
 from urllib.parse import urlparse
-from pathlib import PosixPath
 
 from webdav4.fsspec import WebdavFileSystem
 
@@ -111,7 +109,9 @@ class StorageProvider(StorageProviderBase):
         # and set additional attributes.
         port = f":{self.settings.port}" if self.settings.port != 443 else ""
         host = f"{self.settings.protocol}://{self.settings.host}{port}"
-        self.client = WebdavFileSystem(host, auth=(self.settings.username, self.settings.password))
+        self.client = WebdavFileSystem(
+            host, auth=(self.settings.username, self.settings.password)
+        )
 
     @classmethod
     def example_queries(cls) -> List[ExampleQuery]:
@@ -242,7 +242,9 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     def store_object(self):
         # Ensure that the object is stored at the location specified by
         # self.local_path().
-        import pdb; pdb.set_trace()
+        import pdb
+
+        pdb.set_trace()
         if self.local_path().is_dir():
             rpath = f"{self.path.rstrip('/')}/"
         else:
