@@ -242,9 +242,6 @@ class StorageObject(StorageObjectRead, StorageObjectWrite, StorageObjectGlob):
     def store_object(self):
         # Ensure that the object is stored at the location specified by
         # self.local_path().
-        import pdb
-
-        pdb.set_trace()
         if self.local_path().is_dir():
             rpath = f"{self.path.rstrip('/')}/"
         else:
