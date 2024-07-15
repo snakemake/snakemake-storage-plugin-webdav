@@ -15,7 +15,7 @@ documentation = "https://snakemake.github.io/snakemake-plugin-catalog/plugins/st
 python = "^3.11"
 snakemake-interface-common = "^1.15.0"
 snakemake-interface-storage-plugins = "^3.0.0"
-webdav4 = "^0.9.8"
+webdav4 = "^0.10.0"
 fsspec = "^2023.12.2"
 
 [tool.poetry.group.dev.dependencies]
