@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "snakemake-storage-plugin-webdav"
-version = "0.1.1"
+version = "0.1.2"
 description = ""
 authors = ["Johannes Koester <johannes.koester@uni-due.de>",]
 readme = "README.md"
