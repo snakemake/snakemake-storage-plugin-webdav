@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/snakemake/snakemake-storage-plugin-webdav/compare/v0.1.1...v0.1.2) (2025-03-24)
+
+
+### Bug Fixes
+
+* adapt to storage plugin interface changes ([#8](https://github.com/snakemake/snakemake-storage-plugin-webdav/issues/8)) ([163d725](https://github.com/snakemake/snakemake-storage-plugin-webdav/commit/163d725d70d0db46bfd76d7cde43b00704354644))
+
 ## [0.1.1](https://github.com/snakemake/snakemake-storage-plugin-webdav/compare/v0.1.0...v0.1.1) (2023-12-19)
 
 
